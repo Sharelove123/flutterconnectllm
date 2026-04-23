@@ -5,7 +5,6 @@ import 'package:runanywhere/runanywhere.dart';
 import 'package:runanywhere/native/dart_bridge.dart';
 import 'package:runanywhere/native/dart_bridge_model_paths.dart';
 import 'package:runanywhere_llamacpp/runanywhere_llamacpp.dart';
-import 'package:runanywhere/public/configuration/sdk_environment.dart';
 
 /// Repository for managing the on-device LLM model lifecycle:
 /// registering, downloading, loading, and generating text.

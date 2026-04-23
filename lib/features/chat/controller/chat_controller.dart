@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:runanywhere/runanywhere.dart';
 
@@ -69,13 +71,49 @@ class ChatState {
 
 class ChatController extends Notifier<ChatState> {
   LLMStreamingResult? _streamingResult;
+  bool _startupCheckStarted = false;
 
   @override
   ChatState build() {
-    return const ChatState();
+    unawaited(_loadDownloadedModelOnStartup());
+    return const ChatState(isInitializing: true);
   }
 
   LlmRepository get _repo => ref.read(llmRepositoryProvider);
+
+  Future<void> _loadDownloadedModelOnStartup() async {
+    if (_startupCheckStarted) return;
+    _startupCheckStarted = true;
+
+    try {
+      await _repo.ensureInitialized();
+      final downloaded = await _repo.isModelDownloaded();
+
+      if (!downloaded) {
+        state = state.copyWith(
+          isInitializing: false,
+          isModelDownloaded: false,
+        );
+        return;
+      }
+
+      state = state.copyWith(
+        isInitializing: false,
+        isModelDownloaded: true,
+        isLoadingModel: true,
+      );
+
+      await _repo.loadModel();
+      state = state.copyWith(isModelReady: true);
+    } catch (e) {
+      _addErrorMessage('Startup model load failed: $e');
+    } finally {
+      state = state.copyWith(
+        isInitializing: false,
+        isLoadingModel: false,
+      );
+    }
+  }
 
   /// Download the model (shows progress) then load it.
   Future<void> downloadAndLoad() async {
@@ -132,7 +170,9 @@ class ChatController extends Notifier<ChatState> {
 
   /// Send a user message and stream the LLM response.
   Future<void> sendMessage(String text) async {
-    if (text.trim().isEmpty || state.isGenerating) return;
+    if (!state.isModelReady || text.trim().isEmpty || state.isGenerating) {
+      return;
+    }
 
     // Add user message
     final updatedMessages = [

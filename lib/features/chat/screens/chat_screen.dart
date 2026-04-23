@@ -55,7 +55,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     return Scaffold(
       appBar: _buildAppBar(chatState, controller),
-      body: chatState.isModelReady
+      body: chatState.isModelReady ||
+              chatState.isModelDownloaded ||
+              chatState.isInitializing ||
+              chatState.isLoadingModel
           ? _buildChatBody(chatState, controller)
           : _buildSetupBody(chatState, controller),
     );
@@ -236,12 +239,30 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return Column(
       children: [
         Expanded(
-          child: chatState.messages.isEmpty && !chatState.isGenerating
-              ? _buildEmptyChat(controller)
-              : _buildMessageList(chatState),
+          child: !chatState.isModelReady
+              ? _buildLoadingChat()
+              : chatState.messages.isEmpty && !chatState.isGenerating
+                  ? _buildEmptyChat(controller)
+                  : _buildMessageList(chatState),
         ),
         _buildInputBar(chatState, controller),
       ],
+    );
+  }
+
+  Widget _buildLoadingChat() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(color: AppTheme.accentPurple),
+          const SizedBox(height: 14),
+          Text(
+            'Loading model into memory...',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
     );
   }
 
@@ -321,6 +342,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   // ─── Input bar ─────────────────────────────────────────────
   Widget _buildInputBar(ChatState chatState, ChatController controller) {
+    final canSend = chatState.isModelReady && !chatState.isGenerating;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: BoxDecoration(
@@ -338,10 +361,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 controller: _textController,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) {
+                  if (!canSend) return;
                   controller.sendMessage(_textController.text);
                   _textController.clear();
                 },
-                enabled: !chatState.isGenerating,
+                enabled: canSend,
                 style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
                 decoration: const InputDecoration(
                   hintText: 'Type your message…',
@@ -357,11 +381,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   )
                 : _circleButton(
                     icon: Icons.send_rounded,
-                    color: AppTheme.accentPurple,
-                    onPressed: () {
-                      controller.sendMessage(_textController.text);
-                      _textController.clear();
-                    },
+                    color: canSend ? AppTheme.accentPurple : Colors.white24,
+                    onPressed: canSend
+                        ? () {
+                            controller.sendMessage(_textController.text);
+                            _textController.clear();
+                          }
+                        : null,
                   ),
           ],
         ),
@@ -372,7 +398,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget _circleButton({
     required IconData icon,
     required Color color,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
   }) {
     return Container(
       width: 44,
