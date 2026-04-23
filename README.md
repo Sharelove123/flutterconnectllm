@@ -62,14 +62,25 @@ flutter run
 
 ## Architecture
 
+The project follows a feature-first architecture using Riverpod for state management:
+
 ```
 lib/
-├── main.dart                  # SDK init, model registration, app theme
-└── screens/
-    └── chat_screen.dart       # Model download/load + chat UI (single file)
+├── core/
+│   ├── router.dart            # GoRouter navigation setup
+│   └── theme.dart             # Application theme configuration
+├── features/
+│   └── chat/
+│       ├── controller/
+│       │   └── chat_controller.dart # Riverpod state management for chat logic
+│       ├── repository/
+│       │   └── llm_repository.dart  # RunAnywhere SDK interactions
+│       └── screens/
+│           └── chat_screen.dart     # Main chat UI
+├── models/
+│   └── chat_message_model.dart # Data model for chat messages
+└── main.dart                  # App entry point, SDK init, Riverpod ProviderScope
 ```
-
-**Two files total.** This is intentionally minimal to demonstrate the end-to-end flow.
 
 ## SDK Packages Used
 
