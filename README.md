@@ -39,6 +39,14 @@ flutter pub get
 flutter run
 ```
 
+## Download APK
+
+If you only want to install the app, download the compressed release package from:
+
+- `apk/app-release.zip`
+
+After downloading, extract the ZIP and install `app-release.apk` on your Android device.
+
 ### Android
 
 The `AndroidManifest.xml` already includes `INTERNET` permission.
